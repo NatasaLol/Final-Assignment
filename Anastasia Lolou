@@ -1,0 +1,87 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the dataset
+df = pd.read_csv('https://storage.googleapis.com/courses_data/Assignment%20CSV/finance_liquor_sales.csv')
+
+# Preview data
+print(df.head())
+
+# prints the names of all columns
+print(df.columns)
+
+# Check for missing values
+print('Missing Data:\n', df.isna().sum())
+
+# Handling missing values
+df['store_location'] = df['store_location'].fillna('Unknown')
+df['category_name'] = df['category_name'].fillna('Unknown ')
+df.dropna(axis=0, how='any', inplace=True)
+
+# Print the DataFrame after handling missing values
+print('\nDataFrame after handling missing values:')
+
+print(df)
+
+# Filter data for the years 2016-2019
+df['date'] = pd.to_datetime(df['date'])
+df['Year'] = pd.to_datetime(df['date']).dt.year
+
+df_filtered = df[(df['date'].dt.year >= 2016) & (df['date'].dt.year <= 2019)]
+
+print(df_filtered)
+
+# group by zip code  and item number, then sum the number of bottles sold
+grouped_data = df_filtered.groupby(['zip_code', 'item_number'])['bottles_sold'].sum().reset_index()
+
+# identify the most popular item in each zip code
+popular_items = grouped_data.loc[grouped_data.groupby('zip_code')['bottles_sold'].idxmax()]
+
+# rename columns for clarity
+popular_items.columns = ['Zip Code', 'Most Popular Item Number', 'Total Bottles Sold']
+
+# result
+print('\nMost popular items per zip code:\n', popular_items)
+
+# Scatter plot for most popular item per zip code ws
+plt.figure(figsize=(12, 6))
+scatter = plt.scatter(popular_items['Zip Code'], popular_items['Total Bottles Sold'],
+                      c=range(len(popular_items)), cmap='viridis', s=100)
+
+# Adding color bar
+plt.colorbar(scatter, label='Color Scale')
+
+# adding labels
+plt.title('Most Popular Item per Zip Code(2016-2019)')
+plt.xlabel('Zip Code')
+plt.ylabel('Bottles Sold')
+plt.grid(True)
+
+# adding annotation
+for i in range(len(popular_items)):
+    plt.annotate(popular_items['Most Popular Item Number'].iloc[i],
+                 (popular_items['Zip Code'].iloc[i], popular_items['Total Bottles Sold'].iloc[i]),
+                 textcoords="offset points", xytext=(0, 5), ha='center')
+
+plt.show()
+
+# calculate sales percentage per store
+store_sales = df_filtered.groupby('store_name')['sale_dollars'].sum()
+total_sales = store_sales.sum()
+sales_percentage = (store_sales / total_sales) * 100
+
+# rename columns for clarity
+sales_percentage.columns = ['Store Name', 'Sales Percentage']
+
+print("\nPercentage of sales per store:\n", sales_percentage)
+
+# Visualize with Matplotlib
+plt.figure(figsize=(12, 8))
+plt.barh('Store Name','Sales Percentage')
+plt.show()
+
+plt.title('Percentage of sales per store')
+plt.xlabel('Sales percentage')
+plt.ylabel('Store name')
+plt.show()
+
